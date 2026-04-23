@@ -4,6 +4,7 @@ import expressSession from 'express-session';
 import betterSqlite3Session from 'express-session-better-sqlite3';
 import db from './db.mjs';
 import xss from 'xss';
+import bcrypt from 'bcrypt';
 const app = express();
 
 // TODO fix to protect against XSS
@@ -41,37 +42,46 @@ app.post('/login', (req, res) => {
     try {
         // TODO 1. replace with secure version using placeholders
         //const stmt = db.prepare(`SELECT * FROM ht_users WHERE password='${req.body.password}' AND username='${req.body.username}'`);
-        
-
-
-
-
-
-        
         const stmt =db.prepare("SELECT * FROM ht_users WHERE password=? and username=?")
         const results = stmt.all(req.body.password,req.body.username);
-
-
-
-
-
-
-
-
-
-
-        if(results.length > 0) {
-            req.session.username = results[0].username;
-            res.redirect('/');
-            return;
+        if(results.length == 1) {
+           const match = await bcrypt.compare(req.body.password, results[0].password);
+            if (match) {
+                req.session.username = results[0].username;
+                res.redirect('/');
+            } else {
+                msg = "Invalid login credentials";
+                res.render('main', { msg: msg, username: req.session.username });
+            }
         } else {
-            msg = "Invalid login";
+            msg = "Invalid login credentials";
+            res.render('main', { msg: msg, username: req.session.username });
         }
-    } catch(e) {
+    } catch (e) {
         msg = `Internal error: ${e}`;
+        res.render('main', { msg: msg, username: req.session.username });
     }
-    res.render('main', { msg: msg, username: req.session.username } );
 });
+
+
+app.post('/register', async (req, res) => {
+    let { username, password } = req.body;
+    try {
+        const encPass = await bcrypt.hash(password, 10); 
+        const stmt = db.prepare("INSERT INTO ht_users (username, password) VALUES (?, ?)");
+       if (results.length > 0) {
+            res.render('main', { msg: 'Username already exists, please select another name that can be unique to you!' });
+        } else {
+            const encPass = await bcrypt.hash(password, 10);  
+            const insertStmt = db.prepare("INSERT INTO ht_users (username, password) VALUES (?, ?)");
+            insertStmt.run(username, encPass);
+            res.redirect('/login');
+        }
+    } catch (error) {
+        res.render('main', { msg: "There has been some registering this user: " + error.message });
+    }
+});
+
 
 
 // Middleware to add login message to all requests

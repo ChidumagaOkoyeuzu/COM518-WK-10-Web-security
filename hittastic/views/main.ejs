@@ -31,6 +31,15 @@ if(locals.username) {
 <input type="submit" value="Go!" />
 </form>
 <% } %>
+
+<h2>Register</h2>
+<form method="post" action="/register">
+<label for="username">Username</label><br />
+<input name="username" id="username" /><br />
+<label for="password">Password</label><br />
+<input name="password" id="password" type="password" /><br />
+<button type="submit">Register</button>
+</form>
 </div>
 
 <div id='msg'><%-msg%></div>
